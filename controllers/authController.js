@@ -45,3 +45,32 @@ exports.login = async (req, res) => {
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
   res.json({ token });
 };
+
+const otpStore = new Map();
+
+exports.requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const otp = generateOtp();
+  otpStore.set(email, otp);
+
+  await sendMail(email, 'Reset Your Password - Aarvasa', `Your OTP is: ${otp}`);
+  res.json({ message: 'OTP sent to your email' });
+};
+
+exports.resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  const validOtp = otpStore.get(email);
+  if (!validOtp || validOtp !== otp)
+    return res.status(400).json({ message: 'Invalid or expired OTP' });
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await User.updateOne({ email }, { password: hashed });
+
+  otpStore.delete(email);
+  res.json({ message: 'Password updated successfully' });
+};
