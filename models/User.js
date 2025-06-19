@@ -6,6 +6,9 @@ const userSchema = new mongoose.Schema({
   otp: String,
   otpExpiry: Date,
   googleId: String,
+  refreshToken: {
+    type: String,
+  },
 });
 
 module.exports = mongoose.model("User", userSchema);
