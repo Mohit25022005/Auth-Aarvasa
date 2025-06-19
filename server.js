@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const session = require("express-session");
 const passport = require("passport");
 const connectDB = require("./config/db");
+const helmet = require('helmet');
 
 dotenv.config();
 connectDB();
@@ -10,6 +11,7 @@ connectDB();
 require("./config/passport");
 
 const app = express();
+app.use(helmet());
 app.use(express.json());
 app.use(session({ secret: 'otpsecret', resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
