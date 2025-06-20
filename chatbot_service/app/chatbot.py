@@ -19,25 +19,28 @@ system_instructions = (
     "If neither helps, still try to give your best answer in a clear, short, and persuasive way. "
     "If users ask to 'show properties under a price' (e.g., under 30 lakhs), inform them to visit the Listings or Search page. "
     "Avoid going off-topic and keep your response brief (within 3 lines unless really needed). "
-    "If you dont know dont cook up be honest and tell dont know."
+    "If you don’t know, don’t cook up — be honest and tell the user you don’t know."
 )
 
-
+# Dynamically resolve file paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+company_context_path = os.path.join(BASE_DIR, "company_context.txt")
+navigation_json_path = os.path.join(BASE_DIR, "navigation.json")
 
 # Initialize both RAG engines
-company_rag = CompanyRAG("app/company_context.txt")
-nav_rag = NavigationRAG("app/navigation.json")
+company_rag = CompanyRAG(company_context_path)
+nav_rag = NavigationRAG(navigation_json_path)
 
 def get_chat_response(user_message: str, chat_history=None) -> str:
     try:
-        # Step 1: Try Navigation
+        # Step 1: Try Navigation RAG
         nav_results = nav_rag.retrieve_navigation_info(user_message, top_k=1)
         nav_match = nav_results[0] if nav_results else None
 
         # Step 2: Try Company Context RAG
         company_context = company_rag.retrieve_relevant_chunks(user_message)
 
-        # If no nav match but company context found → go with company RAG
+        # Step 3: Use company context if found
         if company_context.strip():
             messages = [{"role": "system", "content": f"{system_instructions}\n\n{company_context}"}]
 
@@ -56,11 +59,11 @@ def get_chat_response(user_message: str, chat_history=None) -> str:
             )
             return response.choices[0].message["content"].strip()
 
-        # If nav match found but no company context
+        # Step 4: Use navigation if no company context match
         if nav_match:
             return f"{nav_match['description']} You can find it on the '{nav_match['name']}' page."
 
-        # Final fallback — no RAG or nav matched
+        # Step 5: Final fallback
         return "Hey! I'm Aarvasa's assistant. Let me know how I can help with your property queries. 😊"
 
     except Exception as e:
