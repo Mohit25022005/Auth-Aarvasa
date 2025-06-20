@@ -1,0 +1,8 @@
+fastapi
+openai==0.28
+uvicorn
+python-dotenv
+sentence-transformers
+numpy
+requests
+torch
